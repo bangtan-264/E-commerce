@@ -1,0 +1,43 @@
+<%- include("header",{hasAccount: hasAccount, account: account, userType: "Customer"}) -%>
+
+<div id="pop-up" class="hidden">
+  <div class="card popup-card text-center">
+    <span class="close-button" id="close-popup">&times;</span>
+    <div class="mx-auto"><img class="product_img card-img-top" src="" alt="..." id="pop-img"></div>
+    <div class="card-body">
+      <h5 class="card-title" id="pop-title"></h5>
+      <p class="card-text" id="pop-price"></p>
+      <p class="card-text" id="pop-desc"></p>
+      <a onclick="addItemToCart()" class="btn btn-outline-dark" id="add-to-cart">Add to cart</a>
+      <a onclick="openCart()" class="btn btn-outline-dark hidden" id="go-to-cart">Go To Cart</a>
+      <a onclick="placeOrder()" class="card-btn" id="buy-now">Buy Now</a>
+    </div>
+  </div>
+</div>
+
+<div>
+  <div class="grid" id="card-container">
+    <% for(let i=0;i<5;i++) { %>
+    <div class="grid-item">
+      <div class="product-card">
+        <img class="card-img" src=" <%= products[i].productImage %> " alt="clothes" />
+        <div class="card-content">
+          <h1 class="card-head"> <%= products[i].productName %> </h1>
+          <p class="card-txt">
+            <i class="fa-solid fa-indian-rupee-sign rupee"></i>
+            <%= products[i].price %>
+          </p>
+          <a onclick="viewDetails( <%= products[i].productId %> )" class="card-btn" id=" <%= products[i].productId %> ">View Details</a>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+<div class="text-center my-4">
+  <a class="card-btn btn-yellow bouncy" id="loadMore">View more products</a>
+</div>
+
+<script src="home.js"></script>
+<script src="goToCart.js"></script>
+<%- include("footer"); -%>

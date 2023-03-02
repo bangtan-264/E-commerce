@@ -1,0 +1,35 @@
+<%- include("header2"); -%>
+
+<h1 class=" mx-2">My orders</h1>
+<div class="order-container">
+  <div id="items-list">
+    <div id="cards-wrapper">
+    </div>
+  </div>
+</div>
+
+<div>
+  <div id="user-address" class="login-signup text-center">
+    <h4 mb-3>Enter your address</h4>
+    <input type="text" name="address" id="address" placeholder="Address">
+    <button class="btn btn-outline-dark mt-2" id="submitAddress">Submit</button>
+    <div class="error" id="address-error"></div>
+    <!-- <p class="mx-2">or</p> -->
+    <!-- <button class="btn btn-outline-dark mt-2">Change Address</button> -->
+  </div>
+
+  <div id="checkout" class="text-center">
+    <div>
+      <p>Subtotal(items <span id="itemsCount">0</span> ): <i class="fa-solid fa-indian-rupee-sign rupee"></i> <span id="totalPrice">0</span>
+      </p>
+    </div>
+    <button onclick="checkout()" class="btn btn-warning">Checkout</button>
+  </div>
+</div>
+
+
+
+
+<script src="orders.js"></script>
+<!-- <script src="cart.js"></script> -->
+<%- include("footer"); -%>

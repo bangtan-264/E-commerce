@@ -1,0 +1,20 @@
+<%- include("header",{hasAccount: hasAccount, account: account, userType: "Customer"}) -%>
+
+<div class="container">
+  <div id="items-list">
+    <div id="cards-wrapper">
+    </div>
+  </div>
+  <div id="orderNow" class="text-center hidden">
+    <div>
+      <p>Subtotal(items <span id="itemsCount">0</span> ): <i class="fa-solid fa-indian-rupee-sign rupee"></i> <span id="totalPrice">0</span>
+      </p>
+    </div>
+    <button onclick="buyNow()" class="btn btn-warning">Buy Now</button>
+  </div>
+</div>
+
+
+
+<script src="cart.js"></script>
+<%- include("footer"); -%>
