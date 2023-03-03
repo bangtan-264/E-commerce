@@ -187,8 +187,21 @@ async function getCart(userId, productId) {
     console.log(error);
   }
 }
+async function getCartId() {
+  try {
+    let pool = await sql.connect(config);
+    let cartId = await pool
+      .request()
+      .query(
+        `select cartId from cart order by cartId desc offset 0 rows fetch next 1 rows only`
+      );
+    return cartId.recordsets;
+  } catch (error) {
+    console.log(error);
+  }
+}
 
-async function getCartByUserId(userId) {
+async function getItemsByUserId(userId) {
   try {
     let pool = await sql.connect(config);
     let cartItem = await pool
@@ -202,12 +215,14 @@ async function getCartByUserId(userId) {
   }
 }
 
-async function getCartByCartId(cartId) {
+async function getItemByCartId(cartId) {
   try {
     let pool = await sql.connect(config);
     let cartItem = await pool
       .request()
-      .query(`select cart.* from cart cartId= ${cartId}`);
+      .query(
+        `select cart.cartId, cart.quantity, products.* from cart inner join products on cart.productId = products.productId and cart.cartId= ${cartId}`
+      );
     return cartItem.recordsets;
   } catch (error) {
     console.log(error);
@@ -299,86 +314,113 @@ async function setUserAddress(address, userId) {
     console.log(err);
   }
 }
-async function updateProductStock(productId, newStock) {
+
+async function getUserAddress(userId) {
   try {
     let pool = await sql.connect(config);
-    let productStock = await pool
-      .request()
-      .query(
-        `update products set stock ='${newStock}' where productId=${productId}`
-      );
-    return productStock;
+    let address = await pool.request.query(
+      `get address from users where userId=${userId}`
+    );
+    return address;
   } catch (err) {
     console.log(err);
   }
 }
 
-async function setOrder(orderId, productId, userId, quantity, price, orderTime, billingAddress){
-  try{
-    let pool=await sql.connect(config);
-    let order=await pool.request.query(`insert into orders values(${orderId}, ${productId}, ${userId}, ${quantity}, ${price}, ${orderTime}, '${billingAddress}')`);
-    return order;
-  } catch(err){
-    console.log(err);
-  }
-}
-
-async function getUserAddress(userId){
-  try{
-    let pool=await sql.connect(config);
-    let address=await pool.request.query(`get address from users where userId=${userId}`);
-    return address;
-  } catch(err){
-    console.log(err);
-  }
-}
-
-async function getUserAddress(userId){
-  try{
-    let pool=await sql.connect(config);
-    let address=await pool.request.query(`get address from users where userId=${userId}`);
-    return address;
-  } catch(err){
-    console.log(err);
-  }
-}
-
 async function placeOrder(orderList) {
+  // async function placeOrder(productId) {
+  let errors = [];
   let pool = await sql.connect(config);
-  const transaction;
-  try{
-    transaction=pool.transaction();
-    await transaction.begin();
-    const request=transaction.request();
+  const transaction = new sql.Transaction(pool);
+  transaction.begin(async (err) => {
+    let rolledBack = false;
 
-    let flag=false;
-    for(let i=0;i<orderList.length;i++){
-      this.checkStock(order.productId).then((result)=>{
-        let newStock=result[0][0].stock-quantity;
-        if(newStock<0){
-          await transaction.rollback();
-          flag=true;
-        }else{
-          await pool.request().query(`update products set stock ='${newStock}' where productId=${orderList.productId}`);
-          this.getUserAddress(userId).then((result)=>{
-            console.log(address);
-            let address=result[0][0];
-            let orderId=1;
-            await pool.request.query(`insert into orders(orderId, productId, userId, quantity, price, billingAddress) values(${orderId}, ${orderList.productId}, ${orderList.userId}, ${quantity}, ${orderList.price}, '${address}')`);
-          }).catch((err)=>{
-            await transaction.rollback();
-          })
+    transaction.on("rollback", (aborted) => {
+      console.log("rolledback");
+    });
+    for (let i = 0; i < orderList.length; i++) {
+      let oldStock = 0;
+      let newStock = 0;
+      const request = new sql.Request(transaction);
+      request.query(
+        `select stock from products where productId=${orderList[i].productId}`,
+        async (err, result) => {
+          console.log("result q1", result);
+          if (err) {
+            console.log("error 1");
+            errors.push(err);
+            if (!rolledBack) {
+              console.log("rollback 1 below");
+              await transaction.rollback((err) => {
+                console.log("rolling back 1");
+              });
+            }
+          } else if (result.recordset[0].stock - orderList[i].quantity < 0) {
+            await transaction.rollback((err) => {
+              console.log("rolling back quantity is less");
+            });
+          } else {
+            oldStock = result.recordset[0].stock;
+            console.log("oldStock", oldStock);
+            newStock = oldStock - orderList[i].quantity;
+            console.log(
+              "oldstock",
+              oldStock,
+              "quantity",
+              orderList[i].quantity
+            );
+            console.log("new stock", newStock);
+
+            const request2 = new sql.Request(transaction);
+            request2.query(
+              `update products set stock =${newStock} where productId=${orderList[i].productId}`,
+              async (err, result) => {
+                console.log("query2 res ", result);
+                if (err) {
+                  console.log("error 2");
+                  errors.push(err);
+                  if (!rolledBack) {
+                    console.log("rollback 2 below");
+                    await transaction.rollback((err) => {
+                      console.log("rolling back 2");
+                    });
+                  }
+                }
+                let orderId = 2;
+                const request4 = new sql.Request(transaction);
+                request4.query(
+                  `insert into orders(orderId, productId, userId, quantity, price, billingAddress) values(${orderId}, ${orderList[i].productId}, ${orderList[i].userId}, ${orderList[i].quantity}, ${orderList[i].price}, '${orderList[i].address}')`,
+                  async (err, result) => {
+                    if (err) {
+                      console.log("error 3");
+                      errors.push(err);
+                      if (!rolledBack) {
+                        console.log("rollback 3 below");
+                        await transaction.rollback((err) => {
+                          console.log("rolling back 3");
+                        });
+                      }
+                    }
+                    transaction.commit((err) => {
+                      if (err) {
+                        console.log(errors);
+                        console.log("error in committing transaction");
+                        return JSON.stringify({ res: "error" });
+                        // console.log(err);
+                      } else {
+                        console.log("Success");
+                        return JSON.stringify({ res: "Success" });
+                      }
+                    });
+                  }
+                );
+              }
+            );
+          }
         }
-        if(flag===true){
-          break;
-        }
-      })
+      );
     }
-    await transaction.commit;
-  }
-  catch(err){
-    await transaction.rollback();
-  }
+  });
 }
 
 module.exports = {
@@ -396,14 +438,15 @@ module.exports = {
   setProduct: setProduct,
   getCart: getCart,
   setCart: setCart,
-  getCartByUserId: getCartByUserId,
-  getCartByCartId: getCartByCartId,
+  getItemsByUserId: getItemsByUserId,
+  getItemByCartId: getItemByCartId,
   updateCartQuantity: updateCartQuantity,
   removeFromCart: removeFromCart,
   updatePassword: updatePassword,
   getSellerProducts: getSellerProducts,
   checkStock: checkStock,
   setUserAddress: setUserAddress,
-  updateProductStock: updateProductStock,
-  getUserAddress: getUserAddress
+  getUserAddress: getUserAddress,
+  placeOrder: placeOrder,
+  getCartId: getCartId,
 };

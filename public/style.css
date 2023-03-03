@@ -398,12 +398,12 @@ input {
 }
 
 #user-address {
-  max-height: 15rem;
+  /* max-height: 15rem;
   min-height: 10rem;
   width: 20rem;
   position: fixed;
   top: 6rem;
-  right: 2rem;
+  right: 2rem; */
 }
 
 #checkout {
@@ -415,13 +415,4 @@ input {
   height: 20vh;
   border-radius: 10px;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
-}
-
-.order-container {
-  height: 80vh;
-  width: 70vw;
-  display: flex;
-  /* flex-flow: reverse wrap-reverse; */
-  /* background-color: #eeeeee; */
-  margin-top: 2.5rem;
 }

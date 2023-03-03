@@ -28,10 +28,22 @@ app.use(
   })
 );
 
+// let orderList = [
+//   {
+//     productId: 6,
+//     userId: 1,
+//     quantity: 10,
+//     price: 10999,
+//     address: JSON.stringify({
+//       address: ["H. No. 83, Vijay Colony, Near Paramhans School"],
+//     }),
+//   },
+// ];
+
 // dboperations
-//   .getCart2(2, 6)
+//   .placeOrder(orderList)
 //   .then((result) => {
-//     console.log(result);
+//     console.log("Place order", result);
 //   })
 //   .catch((err) => {
 //     console.log(err);
@@ -465,8 +477,20 @@ app.route("/getCart").get((req, res) => {
   }
 });
 
+app.route("/getCartId").get((req, res) => {
+  dboperations
+    .getItemByCartId()
+    .then((result) => {
+      console.log("cartID", result);
+      res.json({ res: result[0][0] });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+});
+
 app.route("/getCartItems").get((req, res) => {
-  dboperations.getCartByUserId(req.session.userId).then((result) => {
+  dboperations.getItemsByUserId(req.session.userId).then((result) => {
     console.log(result);
     if (result.length !== 0) {
       res.json({ res: result[0] });
@@ -486,7 +510,7 @@ app
     });
   })
   .post((req, res) => {
-    console.log(req.body);
+    console.log("cart", req.body);
     dboperations
       .getCart(req.session.userId, req.body.productId)
       .then((result) => {
@@ -564,32 +588,32 @@ app
 
     if (orderType === "cartList") {
       console.log("cartList");
-      dboperations.getCartByUserId(userId).then((result) => {
-        console.log(result[0]);
+      dboperations.getItemsByUserId(userId).then((result) => {
+        console.log("cartList", result[0]);
         res.json({ res: result[0] });
       });
     } else if (orderType === "cartItem") {
       let cartId = req.session.cartId;
-      dboperations.getCartByCartId(cartId).then((result) => {
-        console.log(result[0]);
+      dboperations.getItemByCartId(cartId).then((result) => {
+        console.log("cartItem", result);
         res.json({ res: result[0] });
       });
-    } else if (orderType === "product") {
-      let productId = req.session.productId;
-      dboperations.getProductById(productId).then((result) => {
-        if (result[0][0].stock > 0) {
-          let product = {
-            productName: result[0][0].productName,
-            productImage: result[0][0].productImage,
-            price: result[0][0].price,
-            productDesc: result[0][0].productDesc,
-            quantity: 1,
-          };
-          res.json({ res: [product] });
-        } else {
-          res.json({ res: "Out of Stock" });
-        }
-      });
+      // } else if (orderType === "product") {
+      //   let productId = req.session.productId;
+      //   dboperations.getProductById(productId).then((result) => {
+      //     if (result[0][0].stock > 0) {
+      //       let product = {
+      //         productName: result[0][0].productName,
+      //         productImage: result[0][0].productImage,
+      //         price: result[0][0].price,
+      //         productDesc: result[0][0].productDesc,
+      //         quantity: 1,
+      //       };
+      //       res.json({ res: [product] });
+      //     } else {
+      //       res.json({ res: "Out of Stock" });
+      //     }
+      //   });
     } else {
       res.json({ res: "Failure" });
     }
@@ -599,14 +623,12 @@ app
     req.session.orderType = orderType;
 
     if (orderType === "cartList") {
+      console.log("cartList");
       res.json({ res: "Success" });
     } else if (orderType === "cartItem") {
       let cartId = req.body.cartId;
       req.session.cartId = cartId;
-      res.json({ res: "Success" });
-    } else if (orderType === "product") {
-      let productId = req.body.productId;
-      req.session.productId = productId;
+      console.log("cartItem");
       res.json({ res: "Success" });
     } else {
       res.json({ res: "Failure" });

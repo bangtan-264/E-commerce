@@ -43,8 +43,8 @@ function appendOneItem(item) {
   <button onclick="decCartQuantity(${item.productId})" class="btn btn-dark" id=" ${item.cartId}">-</button>
 </div>
 <div class="cart-btn cart-item">
-  <button onclick="removeFromCart(${item.cartId})" class="btn btn-dark" id="${item.cartId}">Delete</button>
-  <button class="btn btn-warning" id="${item.cartId}">Buy Now</button>
+  <button onclick="removeFromCart(${item.cartId})" class="btn btn-dark">Delete</button>
+  <button onclick="buyCartItem(${item.cartId})" class="btn btn-warning">Buy Now</button>
 </div>
 </div>`;
 
@@ -144,11 +144,24 @@ function removeFromCart(cartId, newPrice) {
   });
 }
 
-function buyNow() {
+function buyCartItems() {
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/orderType");
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.send(JSON.stringify({ orderType: "cartList" }));
+
+  xhr.addEventListener("load", () => {
+    let result = JSON.parse(xhr.response);
+    console.log(result);
+    window.location.href = "/orders";
+  });
+}
+
+function buyCartItem(cartId) {
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "/orderType");
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send(JSON.stringify({ orderType: "cartItem", cartId: cartId }));
 
   xhr.addEventListener("load", () => {
     let result = JSON.parse(xhr.response);

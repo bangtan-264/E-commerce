@@ -99,14 +99,54 @@ function addItemToCart() {
 
 function placeOrder() {
   let xhr = new XMLHttpRequest();
+  xhr.open("POST", "/cart");
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send(JSON.stringify({ productId: addToCart.key, quantity: 1 }));
+
+  xhr.addEventListener("load", () => {
+    let result = JSON.parse(xhr.response);
+    if (result.res !== "Success") {
+      console.log("Error in adding product to cart");
+    } else {
+      getCartId()
+        .then((result) => {
+          let cartId = result;
+          buyCartItem(cartId);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  });
+}
+
+function buyCartItem(cartId) {
+  let xhr = new XMLHttpRequest();
   xhr.open("POST", "/orderType");
   xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.send(JSON.stringify({ orderType: "product", productId: buyNow.key }));
+  xhr.send(JSON.stringify({ orderType: "cartItem", cartId: cartId }));
 
   xhr.addEventListener("load", () => {
     let result = JSON.parse(xhr.response);
     console.log(result);
     window.location.href = "/orders";
+  });
+}
+
+function getCartId() {
+  return new Promise((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", "/getCartId");
+    xhr.send();
+    xhr.addEventListener("load", () => {
+      let result = JSON.parse(xhr.response);
+      console.log("cartId", cartId);
+      if (result.cartId) {
+        resolve(result.cartId);
+      } else {
+        reject(err);
+      }
+    });
   });
 }
 
