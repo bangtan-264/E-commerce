@@ -24,6 +24,7 @@ function displayProducts() {
       console.log("You don't have any products");
       parent.innerHTML = "No products";
     } else {
+      parent.innerHTML = "";
       appendProducts(result.res);
     }
   });
@@ -56,6 +57,7 @@ function appendOneProduct(item) {
 
   product.innerHTML = productData;
   parent.appendChild(product);
+  console.log("appended");
 }
 
 submit.addEventListener("click", () => {
@@ -96,6 +98,11 @@ function insertProduct(form) {
     if (result.res === "Success") {
       // window.location.href = "/addProduct";
       popUp.classList.toggle("hidden");
+      prodName.value = "";
+      prodPrice.value = "";
+      prodDesc.value = "";
+      prodStock.value = "";
+      prodImage.value = "";
       let product = {
         productName: form.get("productName"),
         price: form.get("price"),

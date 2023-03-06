@@ -1,18 +1,26 @@
 <%- include("header2"); -%>
 
-<div>
-  <div id="user-address" class="login-signup text-center">
+<div class="checkout">
+
+  <div class="payment-container">
+    <h4 mb-3>Choose a payment method</h4>
+    <div id="payment-method">
+      <input type="radio" id="cod" name="payment" value="cod">Cash on Delivery<br>
+      <input type="radio" id="upi" name="payment" value="upi">UPI<br>
+      <input type="radio" id="card" name="payment" value="card">Credit Card/Debit Card<br>
+    </div>
+  </div>
+
+  <div class="user-address">
     <h4 mb-3>Enter your address</h4>
     <input type="text" name="address" id="address" placeholder="Address">
     <button class="btn btn-outline-dark mt-2" id="submitAddress">Submit</button>
     <div class="error" id="address-error"></div>
-    <p class="mx-2">or</p>
-    <!-- <button class="btn btn-outline-dark">Use default Address</button>
-    <button class="btn btn-outline-dark">Change Address</button> -->
   </div>
-
-  <div id="payment-method"></div>
 </div>
+<button class="btn btn-warning" id="confirmOrder">Confirm</button>
+
+
 <script src="orders.js"></script>
 <!-- <script src="cart.js"></script> -->
 <%- include("footer"); -%>

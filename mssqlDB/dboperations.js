@@ -193,22 +193,37 @@ async function getCartId() {
     let cartId = await pool
       .request()
       .query(
-        `select cartId from cart order by cartId desc offset 0 rows fetch next 1 rows only`
+        `select cartId from cart order by cartId desc offset 0 rows fetch next 1 row only`
       );
     return cartId.recordsets;
   } catch (error) {
     console.log(error);
   }
 }
+async function getOrderId() {
+  try {
+    let pool = await sql.connect(config);
+    let orderId = await pool
+      .request()
+      .query(
+        `select orderId from orders order by orderId desc offset 0 rows fetch next 1 row only`
+      );
+    return orderId.recordsets;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
 
 async function getItemsByUserId(userId) {
   try {
     let pool = await sql.connect(config);
-    let cartItem = await pool
-      .request()
-      .query(
-        `select cart.cartId, cart.quantity, products.* from cart inner join products on cart.productId = products.productId and userId= ${userId}`
-      );
+    let cartItem = await pool.request().query(
+      `select cart.cartId, cart.quantity,cart.userId, products.*, users.address from (cart inner join users on 
+          cart.userId=users.userId) inner join products on cart.productId =
+          products.productId and cart.userId= ${userId}`
+    );
     return cartItem.recordsets;
   } catch (error) {
     console.log(error);
@@ -218,11 +233,11 @@ async function getItemsByUserId(userId) {
 async function getItemByCartId(cartId) {
   try {
     let pool = await sql.connect(config);
-    let cartItem = await pool
-      .request()
-      .query(
-        `select cart.cartId, cart.quantity, products.* from cart inner join products on cart.productId = products.productId and cart.cartId= ${cartId}`
-      );
+    let cartItem = await pool.request().query(
+      `select cart.cartId, cart.quantity,cart.userId, products.*, users.address from (cart inner join users on 
+          cart.userId=users.userId) inner join products on cart.productId =
+          products.productId and cart.cartId= ${cartId}`
+    );
     return cartItem.recordsets;
   } catch (error) {
     console.log(error);
@@ -232,10 +247,10 @@ async function getItemByCartId(cartId) {
 async function setCart(cart) {
   try {
     let pool = await sql.connect(config);
-    let setcart = await pool.request()
+    let cartItem = await pool.request()
       .query(`insert into cart values(${cart.userId},
     ${cart.productId}, ${cart.quantity})`);
-    return setCart.recordsets;
+    return cartItem.recordsets;
   } catch (error) {
     console.log(error);
   }
@@ -247,7 +262,7 @@ async function updateCartQuantity(cartId, quantity) {
     let cartQuantity = await pool
       .request()
       .query(`update cart set quantity= ${quantity} where cartId=${cartId}`);
-    return setCart.recordsets;
+    return cartQuantity.recordsets;
   } catch (error) {
     console.log(error);
   }
@@ -297,7 +312,7 @@ async function checkStock(productId) {
     let stock = await pool
       .request()
       .query(`select stock from products where productId=${productId}`);
-    return stock;
+    return stock.recordsets;
   } catch (err) {
     console.log(err);
   }
@@ -306,10 +321,10 @@ async function checkStock(productId) {
 async function setUserAddress(address, userId) {
   try {
     let pool = await sql.connect(config);
-    let stock = await pool
+    let userAddress = await pool
       .request()
       .query(`update users set address ='${address}' where userId=${userId}`);
-    return stock;
+    return userAddress.recordsets;
   } catch (err) {
     console.log(err);
   }
@@ -318,16 +333,44 @@ async function setUserAddress(address, userId) {
 async function getUserAddress(userId) {
   try {
     let pool = await sql.connect(config);
-    let address = await pool.request.query(
-      `get address from users where userId=${userId}`
-    );
-    return address;
+    let address = await pool
+      .request()
+      .query(`select address from users where userId=${userId}`);
+    return address.recordsets;
   } catch (err) {
     console.log(err);
   }
 }
 
-async function placeOrder(orderList) {
+async function getOrders(userId) {
+  try {
+    let pool = await sql.connect(config);
+    let orderList = await pool
+      .request()
+      .query(
+        `select products.productId, products.productName, products.productDesc, products.productImage, orders.orderId, orders.price, orders.quantity,orders.orderTime, orders.billingAddress from products inner join orders on products.productId=orders.orderId and orders.userId=${userId} order by orderTime desc`
+      );
+    return orderList.recordsets;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function getSoldProducts(userId) {
+  try {
+    let pool = await sql.connect(config);
+    let productsList = await pool
+      .request()
+      .query(
+        `select products.productId, products.productName, products.productDesc, products.productImage, orders.orderId, orders.price, orders.quantity,orders.orderTime from products inner join orders on products.productId=orders.orderId and products.sellerId=${userId} order by orderTime desc`
+      );
+    return productsList.recordsets;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function placeOrder(orderId, orderList) {
   // async function placeOrder(productId) {
   let errors = [];
   let pool = await sql.connect(config);
@@ -386,7 +429,6 @@ async function placeOrder(orderList) {
                     });
                   }
                 }
-                let orderId = 2;
                 const request4 = new sql.Request(transaction);
                 request4.query(
                   `insert into orders(orderId, productId, userId, quantity, price, billingAddress) values(${orderId}, ${orderList[i].productId}, ${orderList[i].userId}, ${orderList[i].quantity}, ${orderList[i].price}, '${orderList[i].address}')`,
@@ -449,4 +491,7 @@ module.exports = {
   getUserAddress: getUserAddress,
   placeOrder: placeOrder,
   getCartId: getCartId,
+  getOrders: getOrders,
+  getSoldProducts: getSoldProducts,
+  getOrderId: getOrderId
 };

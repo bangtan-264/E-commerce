@@ -1,0 +1,11 @@
+<%- include("header",{hasAccount: hasAccount, account: account, userType: "Seller"}) -%>
+
+<h1 class="heading text-center">Welcome to Seller Dashboard</h1>
+
+<div id="products-list">
+  <div id="cards-wrapper"></div>
+</div>
+
+<script src="productsSold.js"></script>
+<script src="goToCart.js"></script>
+<%- include("footer"); -%>

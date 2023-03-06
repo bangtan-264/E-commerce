@@ -28,22 +28,10 @@ app.use(
   })
 );
 
-// let orderList = [
-//   {
-//     productId: 6,
-//     userId: 1,
-//     quantity: 10,
-//     price: 10999,
-//     address: JSON.stringify({
-//       address: ["H. No. 83, Vijay Colony, Near Paramhans School"],
-//     }),
-//   },
-// ];
-
 // dboperations
-//   .placeOrder(orderList)
+//   .getOrders(1)
 //   .then((result) => {
-//     console.log("Place order", result);
+//     console.log("Orders", result);
 //   })
 //   .catch((err) => {
 //     console.log(err);
@@ -51,8 +39,8 @@ app.use(
 
 app.set("view engine", "ejs");
 
-// app.route("/").get(checkAuth, (req, res) => {
-app.route("/").get((req, res) => {
+app.route("/").get(checkAuth, (req, res) => {
+  // app.route("/").get((req, res) => {
   dboperations.getnProducts(0, 5).then((result) => {
     if (result.length !== 0) {
       if (req.session.is_logged_in) {
@@ -347,6 +335,14 @@ app
       });
   });
 
+app.route("/sellerProducts").get((req, res) => {
+  let username = req.session.username;
+  res.render("sellerProducts", {
+    hasAccount: true,
+    account: username,
+  });
+});
+
 app
   .route("/forgotPassword")
   .get((req, res) => {
@@ -469,6 +465,25 @@ app.route("/productInfo").post((req, res) => {
   });
 });
 
+app.route("/getOrder").get((req, res) => {
+  if (req.session.is_logged_in && req.session.isVerified) {
+    res.json({ res: 1 });
+  } else {
+    res.json({ res: -1 });
+  }
+});
+
+app.route("/getOrderItems").get((req, res) => {
+  dboperations.getOrders(req.session.userId).then((result) => {
+    console.log("order Items", result);
+    if (result.length !== 0) {
+      res.json({ res: result[0] });
+    } else {
+      res.json({ res: 0 });
+    }
+  });
+});
+
 app.route("/getCart").get((req, res) => {
   if (req.session.is_logged_in && req.session.isVerified) {
     res.json({ res: 1 });
@@ -479,9 +494,9 @@ app.route("/getCart").get((req, res) => {
 
 app.route("/getCartId").get((req, res) => {
   dboperations
-    .getItemByCartId()
+    .getCartId()
     .then((result) => {
-      console.log("cartID", result);
+      req.session.cartId = result[0][0].cartId;
       res.json({ res: result[0][0] });
     })
     .catch((err) => {
@@ -499,6 +514,27 @@ app.route("/getCartItems").get((req, res) => {
     }
   });
 });
+
+app.route("/productsSold").get((req, res) => {
+  let username = req.session.username;
+  res.render("productsSold", {
+    hasAccount: true,
+    account: username,
+  });
+});
+
+app.route("/getItemsSold").get((req, res) => {
+  dboperations.getSoldProducts(req.session.userId).then((result) => {
+    console.log(result);
+    if (result.length !== 0) {
+      res.json({ res: result[0] });
+    } else {
+      res.json({ res: 0 });
+    }
+  });
+});
+
+// app.route("/get");
 
 app
   .route("/cart")
@@ -519,7 +555,7 @@ app
           cart = {
             userId: req.session.userId,
             productId: req.body.productId,
-            quantity: 1,
+            quantity: req.body.quantity,
           };
 
           dboperations.setCart(cart).then((result) => {
@@ -598,22 +634,6 @@ app
         console.log("cartItem", result);
         res.json({ res: result[0] });
       });
-      // } else if (orderType === "product") {
-      //   let productId = req.session.productId;
-      //   dboperations.getProductById(productId).then((result) => {
-      //     if (result[0][0].stock > 0) {
-      //       let product = {
-      //         productName: result[0][0].productName,
-      //         productImage: result[0][0].productImage,
-      //         price: result[0][0].price,
-      //         productDesc: result[0][0].productDesc,
-      //         quantity: 1,
-      //       };
-      //       res.json({ res: [product] });
-      //     } else {
-      //       res.json({ res: "Out of Stock" });
-      //     }
-      //   });
     } else {
       res.json({ res: "Failure" });
     }
@@ -621,6 +641,7 @@ app
   .post((req, res) => {
     let orderType = req.body.orderType;
     req.session.orderType = orderType;
+    console.log("req.body", req.body);
 
     if (orderType === "cartList") {
       console.log("cartList");
@@ -638,24 +659,69 @@ app
 app
   .route("/orders")
   .get((req, res) => {
+    let username = req.session.username;
     res.render("orders");
   })
-  .post((req, res) => {});
+  .post((req, res) => {
+    let orderList = req.body.order;
+    console.log("order list", req.body.order);
+    dboperations
+      .getOrderId()
+      .then((result) => {
+        console.log("orderId", result);
+        if (result[0].length != 0) {
+          if (!result[0][0].orderId) {
+          } 
+            let oId = result[0][0].orderId;
+            let orderId = oId + 1;
+            dboperations.placeOrder(orderId, orderList).then((result) => {
+              console.log("Result", result);
+              res.send({ res: "Success" });
+            });
+        }else{
+          let orderId = 1;
+            dboperations.placeOrder(orderId, orderList).then((result) => {
+              console.log("Result", result);
+              res.send({ res: "Success" });
+            });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  });
 
-app.route("/userAddress").post((req, res) => {
-  let userId = req.session.userId;
-  console.log(userId);
-  let address = JSON.stringify({ address: [req.body.address] });
-  dboperations
-    .setUserAddress(address, userId)
-    .then((result) => {
-      console.log(result);
-      res.json({ res: "Success" });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+app.route("/myOrders").get((req, res) => {
+  let username = req.session.username;
+  res.render("myOrders", {
+    hasAccount: true,
+    account: username,
+  });
 });
+
+app
+  .route("/userAddress")
+  .get((req, res) => {
+    let userId = req.session.userId;
+    dboperations.getUserAddress(userId).then((result) => {
+      console.log("User Address", result);
+      return res.json({ res: result[0][0] });
+    });
+  })
+  .post((req, res) => {
+    let userId = req.session.userId;
+    console.log(userId);
+    let address = JSON.stringify({ address: [req.body.address] });
+    dboperations
+      .setUserAddress(address, userId)
+      .then((result) => {
+        console.log(result);
+        res.json({ res: "Success" });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  });
 
 app.listen(port, () => {
   console.log("App is listening at port " + port);

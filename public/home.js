@@ -76,7 +76,7 @@ function viewDetails(productId) {
     popPrice.innerHTML = productInfo[0].price;
     popDesc.innerHTML = productInfo[0].productDesc;
     addToCart.key = productInfo[0].productId;
-    buyNow.key = productInfo[0].productId;
+    // buyNow.key = productInfo[0].productId;
   });
 }
 
@@ -108,14 +108,19 @@ function placeOrder() {
     if (result.res !== "Success") {
       console.log("Error in adding product to cart");
     } else {
-      getCartId()
-        .then((result) => {
-          let cartId = result;
+      let xhr = new XMLHttpRequest();
+      xhr.open("GET", "/getCartId");
+      xhr.send();
+      xhr.addEventListener("load", () => {
+        let result = JSON.parse(xhr.response);
+        console.log("cartId", result.res.cartId);
+        if (result.res.cartId) {
+          let cartId = result.res.cartId;
           buyCartItem(cartId);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+        } else {
+          console.log("Error");
+        }
+      });
     }
   });
 }
@@ -130,23 +135,6 @@ function buyCartItem(cartId) {
     let result = JSON.parse(xhr.response);
     console.log(result);
     window.location.href = "/orders";
-  });
-}
-
-function getCartId() {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", "/getCartId");
-    xhr.send();
-    xhr.addEventListener("load", () => {
-      let result = JSON.parse(xhr.response);
-      console.log("cartId", cartId);
-      if (result.cartId) {
-        resolve(result.cartId);
-      } else {
-        reject(err);
-      }
-    });
   });
 }
 
